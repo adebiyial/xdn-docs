@@ -1,24 +1,33 @@
 # Static Prerendering
 
-This guide shows you how to configure the XDN to prenderer pages to the edge cache to improve the performance of your site.
+To further improve the performance of your site, the XDN can be configured to pre-render predefined parts (pages, APIs…) of your sites which will be cached on the edge. What you choose to pre-render is entirely up to you and the needs of your application. This feature is known as Static Prerendering and is especially useful for large, complex sites that have too many URLs to pre-render without incurring exceptionally long build times.
 
-## Overview
+Static Prerendering gives your site the speed benefits of a static site by sending requests to your application code and caching the result right after your site is deployed.
 
-The XDN allows you to specify the set of URLs that should be prerendered and cached at the edge during deployment to ensure that users get a subsecond
-experience when accessing your site. Static prerendering works by sending requests to your application code and caching the result right after your site is deployed.
-In this way, you simply build your app to implement server-side rendering and get the speed benefits of a static site for some or all of your pages. This feature is especially useful for large, complex sites that have too many URLs to prerender without incurring exceptionally long build times.
+> By default, the XDN pre-renders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. - See Concurrency and Limits
 
-## Specifying the URLs to Prerender
+Configuring certain parts of your site for pre-rendering is done in the xdn.config.js file which is a regular Node.js module:
 
-To specify which URLs should prerendered, use the Router's [prerender](https://developer.moovweb.com/docs/api/core/classes/_router_router_.router.html#prerender) function. The prerender function accepts an array of [PrerenderRequest] objects or an async function that returns the same:
-
-### Example: Hardcoded Paths
 
 ```js
-const { Router } = require('@xdn/core/router')
+// File: xdn.config.js
+const { Router } = require('@xdn/core/router');
 
-module.exports = new Router().prerender([
-  // HTML pages
+// The `prerender()` function receives an array of `PrerenderRequest` objects
+module.exports = new Router().prerender(PrerenderRequest); 
+```
+
+##  Pre-rendering Paths
+
+To specify the paths to pre-render, use the `prerender` function on the `Router` object:
+
+```js
+// File: xdn.config.js
+const { Router } = require('@xdn/core/router');
+
+// List of paths to pre-render
+const pathsToBePrerendered = [
+  // HTML Pages
   { path: '/' },
   { path: '/categories/mens' },
   { path: '/categories/mens/shirts' },
@@ -26,56 +35,77 @@ module.exports = new Router().prerender([
   { path: '/categories/womens' },
   { path: '/categories/womens/shirts' },
   { path: '/categories/womens/pants' },
+];
 
-  // API responses
+// `prerender()` is passed the `pathsToBePrerendered`
+module.exports = new Router().prerender(pathsToBePrerendered);
+```
+
+The prerender()  function is passed pathsToBePrerendered, and array of PrerenderRequest objects marked for pre-rendering.
+
+## Pre-rendering API responses
+
+Static Pre-rendering does not apply to pages on your site alone. It is also possible to pre-render API responses:
+
+```js
+// File: xdn.config.js
+const { Router } = require('@xdn/core/router');
+
+// List of API Responses to pre-render
+const apiResponsesToBePrerendered = [
   { path: '/api/index.json' },
-  { path: '/api/categories/mens.json' },
-  { path: '/api/categories/mens/shirts.json' },
-  { path: '/api/categories/mens/pants.json' },
-  { path: '/api/categories/womens.json' },
-  { path: '/api/categories/womens/shirts.json' },
-  { path: '/api/categories/womens/pants.json' },
-])
-```
+  { path: '/categories/mens.json' },
+  { path: '/categories/mens/shirts.json' },
+  { path: '/categories/mens/pants.json' },
+  { path: '/categories/womens.json' },
+  { path: '/categories/womens/shirts.json' },
+  { path: '/categories/womens/pants.json' },
+];
 
-### Example: Async Paths
+// `prerender()` is passed the `apiResponsesToBePrerendered`
+module.exports = new Router().prerender(apiResponsesToBePrerendered);
+```
+## Pre-rendering Async Paths
+
+Hard-coding the list of paths to pre-render as in Pre-rendering Paths is useful and straightforward when you know the paths in advance. The XDN can be configured to pre-render dynamic paths that can not be predetermined.
+
 
 ```js
-const { Router } = require('@xdn/core/router')
+// File: xdn.config.js
+const { Router } = require('@xdn/core/router');
 
-module.exports = new Router().prerender(async () => {
-  const paths = await fetchCategoryPathsFromAPI()
+// List of Async Paths to be pre-rendered
+async function asyncPathsToBePrerendered() {
+  // Fetch the list of paths
+  const paths = await fetchCategoryPathsFromAPI();
+
+  // Signature of paths remains an array of objects
+  // [ {path1}, {path2}, {path3}, ...rest ]
   return paths.map(path => ({ path }))
-})
+}
+
+// `prerender()` is passed the `asyncPathsToBePrerendered`
+module.exports = new Router().prerender(asyncPathsToBePrerendered);
 ```
 
-### Example: Defining Paths via an Environment Variable
+In this case, the `prerender()` function is passed an async function `asyncPathsToBePrerendered()` that returns a list of paths with the same signature - an array of `PrerenderRequest` object(s).
+
+## Pre-rendering API Calls
+
+Pre-rendering API calls ensures that client-side navigation is as fast as possible. However, how this is achieved is different in each framework. For example, Next.js embeds a build ID in API URLs to ensure that the client receives responses from the correct version of the back end.
 
 ```js
-const { Router } = require('@xdn/core/router')
+// File: xdn.config.js
+const { Router } = require('@xdn/core/router');
+const { nextRoutes } = require('@xdn/next');
+const { existsSync, readFileSync } = require('fs');
+const { join } = require('path');
 
-module.exports = new Router().prerender(async () => {
-  const paths = process.env.PRERENDER_PATHS.split(/\n/) // define the list of paths to prerender in the XDN Developer Console.
-  return paths.map(path => ({ path }))
-})
-```
-
-## Prerendering API Calls
-
-It is important to prerender not just HTML responses, but API calls as well, to ensure that client-side navigation is as fast as possible. Some frameworks, such as Next.js, embed a build ID in API URLs to ensure that client receives responses from the correct version of the back end. In other frameworks the convention for how API URLs are structured is left to the developer.
-
-### Example: Next.js getServerSideProps
-
-```js
-const { Router } = require('@xdn/core/router')
-const { nextRoutes } = require('@xdn/next')
-const { existsSync, readFileSync } = require('fs')
-const { join } = require('path')
-
-// Read the Next.js build ID from '.next/BUILD_ID
-const buildIdPath = join(process.cwd(), '.next', 'BUILD_ID')
+// Read the Next.js build ID from '.next/BUILD_ID'
+const buildIdPath = join(process.cwd(), '.next', 'BUILD_ID');
 
 function getPrerenderRequests() {
+  // List of paths to pre-render
   const prerenderRequests = [
     { path: '/' },
     { path: '/categories/mens' },
@@ -84,54 +114,96 @@ function getPrerenderRequests() {
     { path: '/categories/womens' },
     { path: '/categories/womens/shirts' },
     { path: '/categories/womens/pants' },
-  ]
+  ];
 
-  if (existsSync(buildIdPath)) {
-    // Derive the API requests from the HTML page URLs
-    const buildId = readFileSync(buildIdPath, 'utf8')
-    const apiPaths = prerenderRequests.map(path => ({ path: `/data/${buildId}${path}.json` }))
+  // Check to see if the buildIdPath exists
+  if(existsSync(buildIdPath)) {
+    // Read the buildId from the buildIdPath
+    const buildId = readFileSync(buildIdPath, 'utf8');
+    
+    // Get the API requests from the page URL
+    const apiPaths = prerenderRequests.map(path => ({ path: `/data/${buildId}${path}.json` }));
+
+    // Add the generated apiPaths to prerenderRequests
     prerenderRequests.push(...apiPaths)
   }
 
-  return prerenderRequests
+  return prerenderRequests;
 }
 
-module.exports = new Router().prerender(getPrerenderRequests).use(nextRoutes)
+module.exports = new Router().prerender(getPrerenderRequests).use(nextRoutes);
+```
+
+## Defining Paths via an Environment Variable
+
+```js
+// File: xdn.config.js
+const { Router } = require('@xdn/core/router');
+
+// List of Paths to be pre-rendered based on the environment
+async function asyncPathsToBePrerendered() {
+  // Define the list of paths to prerender in the XDN Developer Console.
+  const paths = process.env.PRERENDER_PATHS.split(/\n/);
+
+  // Signature of paths remains an array of objects
+  // [ {path1}, {path2}, {path3}, ...rest ]
+  return paths.map(path => ({ path }))
+}
+
+module.exports = new Router().prerender(envPathsToBePrerendered);
 ```
 
 ## Advanced Configuration: Custom Cache Keys
 
-If you're splitting the cache by cookies or headers using a `CustomCacheKey`, you'll need to include the cookie or header values in
-your preload configuration. For example, if you're splitting the cache by a `language` cookie:
+The edge cache can be split by `cookies` or `headers` using a `CustomCacheKey`, in which case you will need to include the `cookie` or `header` values in the preload configuration.
+
+For example, if you split the cache by a language `cookie`:
 
 ```js
-const { Router, CustomCacheKey } = require('@xdn/core/router')
 
-module.exports = new Router()
-  .prerender([
-    // German
-    { path: '/categories/mens', headers: { cookie: 'language=de' } },
-    { path: '/categories/mens/shirts', headers: { cookie: 'language=de' } },
-    { path: '/categories/mens/pants', headers: { cookie: 'language=de' } },
-    { path: '/categories/womens', headers: { cookie: 'language=de' } },
-    { path: '/categories/womens/shirts', headers: { cookie: 'language=de' } },
-    { path: '/categories/womens/pants', headers: { cookie: 'language=de' } },
+// xdn.config.js
+const { Router } = require('@xdn/core/router');
 
-    // English
-    { path: '/categories/mens', headers: { cookie: 'language=en' } },
-    { path: '/categories/mens/shirts', headers: { cookie: 'language=en' } },
-    { path: '/categories/mens/pants', headers: { cookie: 'language=en' } },
-    { path: '/categories/womens', headers: { cookie: 'language=en' } },
-    { path: '/categories/womens/shirts', headers: { cookie: 'language=en' } },
-    { path: '/categories/womens/pants', headers: { cookie: 'language=en' } },
-  ])
-  .get('/categories/:slug*', ({ cache }) => {
-    cache({
-      key: new CustomCacheKey().addCookie('language'),
-      edge: { maxAgeSeconds: 60 * 60 * 24, staleWhileRevalidate: 60 * 60 * 24 * 365 },
-    })
-  })
+module.exports = new Router().prerender([
+  // German
+  { path: '/categories/mens', headers: { cookie: 'language=de' } },
+  { path: '/categories/mens/shirts', headers: { cookie: 'language=de' } },
+  { path: '/categories/mens/pants', headers: { cookie: 'language=de' } },
+  { path: '/categories/womens', headers: { cookie: 'language=de' } },
+  { path: '/categories/womens/shirts', headers: { cookie: 'language=de' } },
+  { path: '/categories/womens/pants', headers: { cookie: 'language=de' } },
+
+  // English
+  { path: '/categories/mens', headers: { cookie: 'language=en' } },
+  { path: '/categories/mens/shirts', headers: { cookie: 'language=en' } },
+  { path: '/categories/mens/pants', headers: { cookie: 'language=en' } },
+  { path: '/categories/womens', headers: { cookie: 'language=en' } },
+  { path: '/categories/womens/shirts', headers: { cookie: 'language=en' } },
+  { path: '/categories/womens/pants', headers: { cookie: 'language=en' } },
+]);
 ```
+
+You need to include the language cookie in the preload configuration:
+
+```js
+//File: xdn.config.js
+
+// Import the CustomCacheKey object
+const { Router, CustomCacheKey } = require('@xdn/core/router');
+
+module.exports = new Router().prerender([
+  /* paths to pre-render, split by cookies or headers */
+]).get('/categories/:slug*', ({ cache }) => {
+  cache({
+    key: new CustomCacheKey().addCookie('language'),
+    edge: { maxAgeSeconds: 60 * 60 * 24, staleWhileRevalidate: 60 * 60 * 24 * 365 }
+  });
+});
+```
+
+##  Concurrency and Limits
+
+There can be a significant additional load on your APIs at when your site is been deployed as a result of how the XDN pre-renders URLs.  By default it will pre-render a maximum of 200 URLs a concurrently with the following limits imposed based on your tier:
 
 ## Concurrency and Limits
 
@@ -142,6 +214,9 @@ By default, the XDN prerenders a maximum of 200 URLs at a time. This can create 
 | ENTERPRISE | 200         | 25,000 per deployment    |
 | FREE       | 10          | 100 per deployment       |
 
+\
+You can lower the limit by setting the [prerenderConcurrency](/guides/xdn_config#section_prerenderconcurrency) property in `xdn.config.js`
+
 ## Viewing Prerendering Results in the XDN Developer Console
 
 When you deploy a new version of your site, you can view the progress and results of prerendering from the deployment
@@ -149,5 +224,4 @@ view in XDN Developer Console:
 
 ![progress](/images/static-prerendering/progress.png)
 
-This section updates in real time as pages are prerendered and will show you any errors that occur. If an error occurs, more
-information can be found in the build logs.
+This section updates in real time as pages are prerendered and will show you any errors that occur. If an error occurs, more information can be found in the build logs.
