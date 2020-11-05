@@ -4,7 +4,7 @@ To further improve the performance of your site, the XDN can be configured to pr
 
 Static Prerendering gives your site the speed benefits of a static site by sending requests to your application code and caching the result right after your site is deployed.
 
-> By default, the XDN prerenders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. - See [Concurrency and Limits](/guides/static_prerendering#section_concurrency_and_limits)
+> By default, the XDN prerenders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. - See Concurrency and Limits
 
 Configuring certain parts of your site for prerendering is done in the `xdn.config.js` file which is a regular Node.js module:
 
