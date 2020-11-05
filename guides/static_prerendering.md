@@ -1,13 +1,12 @@
 # Static Prerendering
 
-To further improve the performance of your site, the XDN can be configured to pre-render predefined parts (pages, APIs…) of your sites which will be cached on the edge. What you choose to pre-render is entirely up to you and the needs of your application. This feature is known as Static Prerendering and is especially useful for large, complex sites that have too many URLs to pre-render without incurring exceptionally long build times.
+To further improve the performance of your site, the XDN can be configured to prerender predefined parts (pages, APIs…) of your sites which will be cached on the edge. What you choose to prerender is entirely up to you and the needs of your application. This feature is known as **Static Prerendering** and is especially useful for large, complex sites that have too many URLs to prerender without incurring exceptionally long build times.
 
 Static Prerendering gives your site the speed benefits of a static site by sending requests to your application code and caching the result right after your site is deployed.
 
-> By default, the XDN pre-renders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. - See Concurrency and Limits
+> By default, the XDN prerenders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. - See [Concurrency and Limits](#section_concurrency_and_limits)
 
-Configuring certain parts of your site for pre-rendering is done in the xdn.config.js file which is a regular Node.js module:
-
+Configuring certain parts of your site for prerendering is done in the `xdn.config.js` file which is a regular Node.js module:
 
 ```js
 // File: xdn.config.js
@@ -17,15 +16,15 @@ const { Router } = require('@xdn/core/router');
 module.exports = new Router().prerender(PrerenderRequest); 
 ```
 
-##  Pre-rendering Paths
+##  Prerendering Paths
 
-To specify the paths to pre-render, use the `prerender` function on the `Router` object:
+To specify the paths to prerender, use the `prerender()` function on the `Router` object:
 
 ```js
 // File: xdn.config.js
 const { Router } = require('@xdn/core/router');
 
-// List of paths to pre-render
+// List of paths to prerender
 const pathsToBePrerendered = [
   // HTML Pages
   { path: '/' },
@@ -41,17 +40,17 @@ const pathsToBePrerendered = [
 module.exports = new Router().prerender(pathsToBePrerendered);
 ```
 
-The prerender()  function is passed pathsToBePrerendered, and array of PrerenderRequest objects marked for pre-rendering.
+The `prerender()` function is passed `pathsToBePrerendered`, an array of `PrerenderRequest` objects marked for prerendering.
 
-## Pre-rendering API responses
+## Prerendering API responses
 
-Static Pre-rendering does not apply to pages on your site alone. It is also possible to pre-render API responses:
+Static Prerendering does not apply to pages on your site alone. It is also possible to prerender API responses:
 
 ```js
 // File: xdn.config.js
 const { Router } = require('@xdn/core/router');
 
-// List of API Responses to pre-render
+// List of API Responses to prerender
 const apiResponsesToBePrerendered = [
   { path: '/api/index.json' },
   { path: '/categories/mens.json' },
@@ -65,16 +64,16 @@ const apiResponsesToBePrerendered = [
 // `prerender()` is passed the `apiResponsesToBePrerendered`
 module.exports = new Router().prerender(apiResponsesToBePrerendered);
 ```
-## Pre-rendering Async Paths
 
-Hard-coding the list of paths to pre-render as in Pre-rendering Paths is useful and straightforward when you know the paths in advance. The XDN can be configured to pre-render dynamic paths that can not be predetermined.
+## Prerendering Async Paths
 
+Hard-coding the list of paths to prerender as in *Prerendering Paths* is useful and straightforward when you know the paths in advance. The XDN can be configured to prerender dynamic paths that can not be predetermined in advance.
 
 ```js
 // File: xdn.config.js
 const { Router } = require('@xdn/core/router');
 
-// List of Async Paths to be pre-rendered
+// List of Async Paths to be prerendered
 async function asyncPathsToBePrerendered() {
   // Fetch the list of paths
   const paths = await fetchCategoryPathsFromAPI();
@@ -90,9 +89,9 @@ module.exports = new Router().prerender(asyncPathsToBePrerendered);
 
 In this case, the `prerender()` function is passed an async function `asyncPathsToBePrerendered()` that returns a list of paths with the same signature - an array of `PrerenderRequest` object(s).
 
-## Pre-rendering API Calls
+## Prerendering API Calls
 
-Pre-rendering API calls ensures that client-side navigation is as fast as possible. However, how this is achieved is different in each framework. For example, Next.js embeds a build ID in API URLs to ensure that the client receives responses from the correct version of the back end.
+Prerendering API calls ensures that client-side navigation is as fast as possible. However, how this is achieved is different in each framework. For example, Next.js embeds a build ID in API URLs to ensure that the client receives responses from the correct version of the back end.
 
 ```js
 // File: xdn.config.js
@@ -105,7 +104,7 @@ const { join } = require('path');
 const buildIdPath = join(process.cwd(), '.next', 'BUILD_ID');
 
 function getPrerenderRequests() {
-  // List of paths to pre-render
+  // List of paths to prerender
   const prerenderRequests = [
     { path: '/' },
     { path: '/categories/mens' },
@@ -136,11 +135,13 @@ module.exports = new Router().prerender(getPrerenderRequests).use(nextRoutes);
 
 ## Defining Paths via an Environment Variable
 
+The paths marked for pre-rendering can be defined based on the running environment:
+
 ```js
 // File: xdn.config.js
 const { Router } = require('@xdn/core/router');
 
-// List of Paths to be pre-rendered based on the environment
+// List of Paths to be prerendered based on the environment
 async function asyncPathsToBePrerendered() {
   // Define the list of paths to prerender in the XDN Developer Console.
   const paths = process.env.PRERENDER_PATHS.split(/\n/);
@@ -160,7 +161,6 @@ The edge cache can be split by `cookies` or `headers` using a `CustomCacheKey`, 
 For example, if you split the cache by a language `cookie`:
 
 ```js
-
 // xdn.config.js
 const { Router } = require('@xdn/core/router');
 
@@ -192,7 +192,7 @@ You need to include the language cookie in the preload configuration:
 const { Router, CustomCacheKey } = require('@xdn/core/router');
 
 module.exports = new Router().prerender([
-  /* paths to pre-render, split by cookies or headers */
+  /* paths to prerender, split by cookies or headers */
 ]).get('/categories/:slug*', ({ cache }) => {
   cache({
     key: new CustomCacheKey().addCookie('language'),
@@ -203,11 +203,7 @@ module.exports = new Router().prerender([
 
 ##  Concurrency and Limits
 
-There can be a significant additional load on your APIs at when your site is been deployed as a result of how the XDN pre-renders URLs.  By default it will pre-render a maximum of 200 URLs a concurrently with the following limits imposed based on your tier:
-
-## Concurrency and Limits
-
-By default, the XDN prerenders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. You can lower this limit by setting the [prerenderConcurrency](/guides/xdn_config#section_prerenderconcurrency) property in `xdn.config.js`. The XDN imposes the following limits on prerendering:
+There can be a significant additional load on your APIs when your site is been deployed as a result of how the XDN prerenders URLs. By default it will prerender a maximum of 200 URLs concurrently with the following limits imposed based on your tier:
 
 | Tier       | Concurrency | Total number of requests |
 | ---------- | ----------- | ------------------------ |
