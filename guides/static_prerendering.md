@@ -6,10 +6,10 @@ Static Prerendering gives your site the speed benefits of a static site by sendi
 
 > By default, the XDN prerenders a maximum of 200 URLs at a time. This can create significant additional load on your APIs at the time of deployment. - See Concurrency and Limits
 
-Configuring certain parts of your site for prerendering is done in the `xdn.config.js` file which is a regular Node.js module:
+Configuring certain parts of your site for prerendering is done in the `routes.js` file which is a regular Node.js module:
 
 ```js
-// File: xdn.config.js
+// File: routes.js
 const { Router } = require('@xdn/core/router');
 
 // The `prerender()` function receives an array of `PrerenderRequest` objects
@@ -21,7 +21,7 @@ module.exports = new Router().prerender(PrerenderRequest);
 To specify the paths to prerender, use the `prerender()` function on the `Router` object:
 
 ```js
-// File: xdn.config.js
+// File: routes.js
 const { Router } = require('@xdn/core/router');
 
 // List of paths to prerender
@@ -47,7 +47,7 @@ The `prerender()` function is passed `pathsToBePrerendered`, an array of `Preren
 Static Prerendering does not apply to pages on your site alone. It is also possible to prerender API responses:
 
 ```js
-// File: xdn.config.js
+// File: routes.js
 const { Router } = require('@xdn/core/router');
 
 // List of API Responses to prerender
@@ -70,7 +70,7 @@ module.exports = new Router().prerender(apiResponsesToBePrerendered);
 Hard-coding the list of paths to prerender as in *Prerendering Paths* is useful and straightforward when you know the paths in advance. The XDN can be configured to prerender dynamic paths that can not be predetermined in advance.
 
 ```js
-// File: xdn.config.js
+// File: routes.js
 const { Router } = require('@xdn/core/router');
 
 // List of Async Paths to be prerendered
@@ -94,7 +94,7 @@ In this case, the `prerender()` function is passed an async function `asyncPaths
 Prerendering API calls ensures that client-side navigation is as fast as possible. However, how this is achieved is different in each framework. For example, Next.js embeds a build ID in API URLs to ensure that the client receives responses from the correct version of the back end.
 
 ```js
-// File: xdn.config.js
+// File: routes.js
 const { Router } = require('@xdn/core/router');
 const { nextRoutes } = require('@xdn/next');
 const { existsSync, readFileSync } = require('fs');
@@ -138,7 +138,7 @@ module.exports = new Router().prerender(getPrerenderRequests).use(nextRoutes);
 The paths marked for pre-rendering can be defined based on the running environment:
 
 ```js
-// File: xdn.config.js
+// File: routes.js
 const { Router } = require('@xdn/core/router');
 
 // List of Paths to be prerendered based on the environment
@@ -161,7 +161,7 @@ The edge cache can be split by `cookies` or `headers` using a `CustomCacheKey`, 
 For example, if you split the cache by a language `cookie`:
 
 ```js
-// xdn.config.js
+// routes.js
 const { Router } = require('@xdn/core/router');
 
 module.exports = new Router().prerender([
@@ -186,7 +186,7 @@ module.exports = new Router().prerender([
 You need to include the language cookie in the preload configuration:
 
 ```js
-//File: xdn.config.js
+//File: routes.js
 
 // Import the CustomCacheKey object
 const { Router, CustomCacheKey } = require('@xdn/core/router');
